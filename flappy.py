@@ -7,6 +7,8 @@ if os.name == 'nt':
     import msvcrt
 else:
     import select
+    import tty
+    import termios
 
 os.system("")
 
@@ -26,6 +28,10 @@ def BUILD_PLAYER_BODY():
         (PLAYER_POINT[0], PLAYER_POINT[1] + 1),
         (PLAYER_POINT[0] + 1, PLAYER_POINT[1])
     ]
+
+def exit(e = 0):
+    if os.name != 'nt': termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+    sys.exit(e)	
 
 def BUILD_OBJECT_BODY(obj, d):
     body = []

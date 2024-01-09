@@ -7,6 +7,8 @@ if os.name == 'nt':
     import msvcrt
 else:
     import select
+    import termios
+    import tty
 
 os.system("")
 
