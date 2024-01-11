@@ -1,6 +1,7 @@
 import sys
 import os
 from time import sleep
+from enum import IntEnum
 
 os.system("")
 
@@ -13,9 +14,11 @@ else:
     OLD_SETTINGS = termios.tcgetattr(sys.stdin)
     tty.setcbreak(sys.stdin.fileno())
 
-STATUS_SUCCESS = 0
-STATUS_ERROR   = 1
-def quit(status = STATUS_SUCCESS):
+class Status(IntEnum):
+    SUCCESS = 0
+    ERROR   = 1
+
+def quit(status: Status = Status.SUCCESS):
     if os.name != 'nt': termios.tcsetattr(sys.stdin, termios.TCSADRAIN, OLD_SETTINGS)
     exit(status)
 
@@ -24,7 +27,7 @@ def __func__():
 func = type(__func__)
 
 class Point:
-    def __init__(self, y = 0, x = 0):
+    def __init__(self, y: int = 0, x: int = 0):
         self.y = y
         self.x = x
     
@@ -32,120 +35,160 @@ class Point:
         return f"({self.y}, {self.x})"
     
     def __add__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         return Point(self.y + p.y, self.x + p.x)
     
     def __iadd__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         self.y += p.y
         self.x += p.x
         return self
         
     def __radd__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         return self.__add__(p)
         
     def __sub__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         return Point(self.y - p.y, self.x - p.x)
     
     def __isub__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         self.y -= p.y
         self.x -= p.x
         return self
         
     def __rsub__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         return self.__sub__(p)
         
     def __eq__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.y, self.x) == (p.y, p.x)
     
     def __ne__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.y, self.x) != (p.y, p.x)
     
     def __gt__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.y, self.x) > (p.y, p.x)
     
     def __lt__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.y, self.x) < (p.y, p.x)
     
     def __ge__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.y, self.x) > (p.y, p.x)
     
     def __le__(self, p):
+        if type(p) != type(self):
+            raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.y, self.x) < (p.y, p.x)
+    
+    def dup(self):
+        """
+            Returns a duplicate of itself
+        """
+        return Point(self.y, self.x)
         
 class __RenderQueue:
-    def __init__(self, queue = {}):
+    def __init__(self, queue: dict = {}):
         self.__queue: dict[tuple[int, int]] = queue
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.__queue)
     
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.__queue)
 
     def __add__(self, rq):
+        if type(rq) != type(self):
+            raise ValueError(f"{rq} is not of type tengine.RenderQueue!")
         return RenderQueue(self.__queue + rq.queue)
 
     def __iadd__(self, rq):
+        if type(rq) != type(self):
+            raise ValueError(f"{rq} is not of type tengine.RenderQueue!")
         self.__queue += rq.asDict()
         
     def __radd__(self, rq):
+        if type(rq) != type(self):
+            raise ValueError(f"{rq} is not of type tengine.RenderQueue!")
         return self.__add__(rq)
     
-    def asDict(self):
+    def asDict(self) -> dict[tuple[int, int], str]:
         return self.__queue
 
-    def points(self):
+    def points(self) -> list[Point]:
         return [Point(p.y, p.x) for p in self.__queue.keys()]
     
-    def get(self, point):
+    def get(self, point) -> str|None:
         return self.__queue.get((point.y, point.x))
     
-    def add(self, point, symbol):
+    def add(self, point: Point, symbol: str):
         self.__queue[(point.y, point.x)] = symbol
 
     def clear(self):
         self.__queue = {}
 
 KEY_SPACE = ' '
-__KEY__ = None
+__KEY = None
 def key_pressed(key: str) -> bool:
-    global __KEY__
+    global __KEY
     if os.name == 'nt':
         if msvcrt.kbhit():
             try:
-                __KEY__ = msvcrt.getch().decode('utf-8')
+                __KEY = msvcrt.getch().decode('utf-8')
             except:
                 pass
     else:
         if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
-            __KEY__ = sys.stdin.read(1)
-    if __KEY__ == key:
-        __KEY__ = None
+            __KEY = sys.stdin.read(1)
+    if __KEY == key:
+        __KEY = None
         return True
     return False
 
-LINES = 0
-def puts(s, overwrite = True):
-    global LINES
+__LINES = 0
+def puts(s: str, overwrite: bool = True):
+    global __LINES
     if '\n' in s and overwrite:
-        LINES += 1
+        __LINES += 1
     sys.stdout.write(s)
         
 Y_SIZE = 0
 X_SIZE = 0
-UPDATE_FN: func
-SETUP_FN: func
-TICKDELAY = 0
-INITIALIZED = False
+__UPDATE_FN: func
+__SETUP_FN: func
+__TICKDELAY = 0
+__BG_SYMBOL: str
+__BORDER: bool
+__INITIALIZED = False
 
-def init(yx_size: tuple[int, int], setup: func, update: func, tickdelay: float = 0.08):
-    global Y_SIZE, X_SIZE, SETUP_FN, UPDATE_FN, TICKDELAY, INITIALIZED
+def init(yx_size: tuple[int, int], setup: func, update: func, tickdelay: float = 0.08, bg_symbol: str = '.', border: bool = True):
+    global Y_SIZE, X_SIZE, __SETUP_FN, __UPDATE_FN, __TICKDELAY, __BG_SYMBOL, __BORDER, __INITIALIZED
     Y_SIZE = yx_size[0]
     X_SIZE = yx_size[1]
-    UPDATE_FN = update
-    SETUP_FN = setup
-    TICKDELAY = tickdelay
-    
-    INITIALIZED = True
+    __UPDATE_FN = update
+    __SETUP_FN = setup
+    __TICKDELAY = tickdelay
+    __BG_SYMBOL = bg_symbol
+    __BORDER = border
+
+    __INITIALIZED = True
 
 RenderQueue = __RenderQueue()
 def Strings2RenderQueue(lines: list[str], origin: Point):
@@ -170,28 +213,32 @@ def Strings2RenderQueue(lines: list[str], origin: Point):
         RenderQueue.add(point, ch)
 
 def Display():
+    if __BORDER: puts("." + ("-"*X_SIZE) + '.\n')
     for y in range(0, Y_SIZE):
+        if __BORDER: puts('|')
         for x in range(0, X_SIZE):
             symbol = RenderQueue.get(Point(y, x))
             if symbol:
                 puts(symbol)
             else:
-                puts('.')
-        puts('\n')   
-     
+                puts(__BG_SYMBOL)
+        if __BORDER: puts('|')
+        puts('\n')
+    if __BORDER: puts("`" + ("-"*X_SIZE) + '´\n')
+
 def Gameloop():
-    global LINES
+    global __LINES
     
-    if not INITIALIZED:
+    if not __INITIALIZED:
         raise ValueError("Please run 'tengine.init' first!")
     
-    SETUP_FN()
+    __SETUP_FN()
 
     while True:
         Display()
     
-        UPDATE_FN()
+        __UPDATE_FN()
         
-        puts(f"\033[{LINES}A\r")
-        LINES = 0
-        sleep(TICKDELAY)
+        puts(f"\033[{__LINES}A\r")
+        __LINES = 0
+        sleep(__TICKDELAY)

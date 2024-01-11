@@ -1,160 +1,153 @@
-import sys
-import os
-from time import sleep
+from tengine import Point, key_pressed
+import tengine
+from enum import IntEnum
 from random import randint
 
-if os.name == 'nt':
-    import msvcrt
-else:
-    import select
-    import termios
-    import tty
+class Direction(IntEnum):
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
 
-os.system("")
+class GameState(IntEnum):
+    MENU = 0
+    GAME = 1
 
-DIR_UP = 0
-DIR_DOWN = 1
-DIR_LEFT = 2
-DIR_RIGHT = 3
+Game_State = GameState.MENU
 
-STATE_GAMELOOP = 0
-STATE_GAMEOVER = 1
+Player: Point
+Player_Direction: Direction
+Player_Tail: list[Point]
+Player_Length = 0
 
-Y = 20
-X = 42
+Highscore = 0
 
-PLAYER_POINT = (3, 5)
-PLAYER_DIR = DIR_RIGHT
-PLAYER_TAIL = []
-PLAYER_LENGTH = 0
+Apple: Point
 
-APPLE_POINT = (-1, -1)
+def menu():
+    global Game_State, Highscore
 
-GAME_STATE = STATE_GAMEOVER
-HIGHSCORE = 0
+    tengine.__BG_SYMBOL = ' '
 
-def puts(s):
-    sys.stdout.write(s)
-
-def display():
-    for y in range(0, Y):
-        for x in range(0, X):
-            if (y, x) == PLAYER_POINT:
-                puts('@')
-            elif (y, x) in PLAYER_TAIL:
-                puts('#')
-            elif (y, x) == APPLE_POINT:
-                puts('O')
-            else:
-                puts('.')
-        puts('\n')
-
-def move():
-    global PLAYER_POINT, PLAYER_TAIL, GAME_STATE
-    y, x = PLAYER_POINT
+    if Player_Length - 1 > Highscore:
+        Highscore = Player_Length - 1
     
-    PLAYER_TAIL.append((y, x))
+    heighscore = [f"[ HIGHSCORE: {Highscore} ]"]
+    logo = [
+        "                           ",
+        "    ____          __       ",
+        "   / __/__  ___ _/ /_____  ",
+        "  _\\ \/ _ \\/ _ `/  '_/ -_) ",
+        " /___/_//_/\\_,_/_/\\_\\\\__/  ",
+        "  Snake made using tengine ",
+        "                           ",
+        "   [P - Play]  [Q - Quit]  "
+    ]
+
+    if key_pressed('q'):
+        tengine.quit()
+    elif key_pressed('p'):
+        setup()
+        tengine.__BG_SYMBOL = '.'
+        Game_State = GameState.GAME
+        return
+
+    tengine.RenderQueue.clear()
+    tengine.Strings2RenderQueue(
+        logo,
+        Point(
+            int(tengine.Y_SIZE / 2) - int(len(logo) / 2),
+            int(tengine.X_SIZE / 2) - int(len(logo[0]) / 2)
+        )
+    )
+    if Highscore > 0:
+        tengine.Strings2RenderQueue(
+            heighscore,
+            Point(
+                int(tengine.Y_SIZE / 2) - (int(len(heighscore) / 2) + 4),
+                int(tengine.X_SIZE / 2) - int(len(heighscore[0]) / 2)
+            )
+        )
     
-    if PLAYER_DIR == DIR_UP:
-        PLAYER_POINT = (y - 1, x)
-    elif PLAYER_DIR == DIR_DOWN:
-        PLAYER_POINT = (y + 1, x)
-    elif PLAYER_DIR == DIR_LEFT:
-        PLAYER_POINT = (y, x - 1)
-    elif PLAYER_DIR == DIR_RIGHT:
-        PLAYER_POINT = (y, x + 1)
+
+def game():
+    global Player, Player_Tail, Player_Direction, Player_Length, Apple, Game_State
+
+    Player_Tail.append(Player.dup())
+    
+    if Player_Direction == Direction.UP:
+        Player.y -= 1
+    elif Player_Direction == Direction.DOWN:
+        Player.y += 1
+    elif Player_Direction == Direction.LEFT:
+        Player.x -= 1
+    elif Player_Direction == Direction.RIGHT:
+        Player.x += 1
     else:
         print("Unknown direction!")
-        exit(1)
+        tengine.quit(tengine.Status.ERROR)
     
-    if len(PLAYER_TAIL) > PLAYER_LENGTH:
-        PLAYER_TAIL.pop(0)
-     
-__KEY__ = None     
-if os.name != 'nt':
-    old_settings = termios.tcgetattr(sys.stdin)
-    tty.setcbreak(sys.stdin.fileno())
-    def is_pressed(key):
-        global __KEY__
-        if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
-            __KEY__ = sys.stdin.read(1)
-            
-        if __KEY__ == key:
-            __KEY__ = None
-            return True
-        
-        return False
-else:
-    def is_pressed(key):
-        global __KEY__
-        if msvcrt.kbhit():
-            __KEY__ = msvcrt.getch().decode('utf-8')
-        
-        if __KEY__ == key:
-            __KEY__ = None
-            return True
-        
-        return False
-    
-    
-   
-def main():
-    global PLAYER_DIR, PLAYER_POINT, GAME_STATE, APPLE_POINT, PLAYER_LENGTH, PLAYER_TAIL, HIGHSCORE
+    if len(Player_Tail) > Player_Length:
+        Player_Tail.pop(0)
 
-    while True:
-        if GAME_STATE == STATE_GAMEOVER:
-            puts("  PYTHON - SNAKE GAME  \n")
-            puts(" [Q - Exit] [P - Play] ")
-            
-            if is_pressed('q'):
-                puts(f"\033[{Y}B")
-                if os.name != 'nt': termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-                exit()
-            elif is_pressed('p'):
-                if PLAYER_LENGTH > HIGHSCORE: HIGHSCORE = PLAYER_LENGTH
-                PLAYER_POINT = (3, 5)
-                PLAYER_DIR = DIR_RIGHT
-                PLAYER_TAIL = []
-                PLAYER_LENGTH = 0
-                APPLE_POINT = (-1, -1)
-                GAME_STATE = STATE_GAMELOOP
-                sleep(1)
-                
-            puts("\033[1A\r")
-        elif GAME_STATE == STATE_GAMELOOP:
-            display()
-            
-            if is_pressed('w') and PLAYER_DIR != DIR_DOWN:
-                PLAYER_DIR = DIR_UP
-            elif is_pressed('s') and PLAYER_DIR != DIR_UP:
-                PLAYER_DIR = DIR_DOWN
-            elif is_pressed('a') and PLAYER_DIR != DIR_RIGHT:
-                PLAYER_DIR = DIR_LEFT
-            elif is_pressed('d') and PLAYER_DIR != DIR_LEFT:
-                PLAYER_DIR = DIR_RIGHT
-            
-            if APPLE_POINT == (-1, -1):
-                APPLE_POINT = PLAYER_POINT
-                while APPLE_POINT == PLAYER_POINT or APPLE_POINT in PLAYER_TAIL:
-                    APPLE_POINT = (randint(0, Y - 1), randint(0, X - 1))
-             
-            move()
-            
-            if PLAYER_POINT[0] > Y - 1 or PLAYER_POINT[1] > X - 1 or PLAYER_POINT[0] < 0 or PLAYER_POINT[1] < 0:
-                GAME_STATE = STATE_GAMEOVER
-            elif PLAYER_POINT in PLAYER_TAIL:
-                GAME_STATE = STATE_GAMEOVER
-            elif PLAYER_POINT == APPLE_POINT:
-                PLAYER_LENGTH += 1
-                APPLE_POINT = (-1, -1)
-             
-            puts(f"{'[NEW HIGHSCORE] ' if PLAYER_LENGTH > HIGHSCORE else ' '*16}[{PLAYER_LENGTH} POINTS]\n")
-            puts(f"\033[{Y + 1}A\r")
-        else:
-            print("Unknown game state!")
-            exit(1)
-        
-        sleep(0.08)
-        
-if __name__ == "__main__":
-    main()
+    if key_pressed('w') and Player_Direction != Direction.DOWN:
+        Player_Direction = Direction.UP
+    elif key_pressed('s') and Player_Direction != Direction.UP:
+        Player_Direction = Direction.DOWN
+    elif key_pressed('a') and Player_Direction != Direction.RIGHT:
+        Player_Direction = Direction.LEFT
+    elif key_pressed('d') and Player_Direction != Direction.LEFT:
+        Player_Direction = Direction.RIGHT
+
+    if Apple is None:
+        Apple = Player.dup()
+        while Apple == Player or Apple in Player_Tail:
+            Apple = Point(randint(0, tengine.Y_SIZE - 1), randint(0, tengine.X_SIZE - 1))
+    
+    if Player.y > tengine.Y_SIZE - 1 or Player.x > tengine.X_SIZE - 1 or Player.y < 0 or Player.x < 0:
+        Game_State = GameState.MENU
+        tengine.sleep(0.5)
+        return
+    elif Player in Player_Tail:
+        Game_State = GameState.MENU
+        tengine.sleep(0.5)
+        return
+    elif Player == Apple:
+        Player_Length += 1
+        Apple = None
+
+    tengine.RenderQueue.clear()
+
+    score = [f"[ SCORE: {Player_Length - 1} ]"]
+    tengine.Strings2RenderQueue(score, Point(1, int(tengine.X_SIZE / 2) - int(len(score[0]) / 2)))
+
+    tengine.RenderQueue.add(Player, '\u001b[32m@\u001b[0m')
+    for segment in Player_Tail:
+        tengine.RenderQueue.add(segment, '\u001b[32;1mo\u001b[0m')
+    
+    if Apple is not None:
+        tengine.RenderQueue.add(Apple, '\u001b[31;1m*\u001b[0m')
+
+def setup():
+    global Player, Player_Direction, Player_Tail
+    global Player_Length, Apple, Game_State
+
+    Player = Point(int(tengine.Y_SIZE / 2) , 1)
+    Player_Direction = Direction.RIGHT
+    Player_Tail = []
+    Player_Length = 1
+
+    Apple = None
+
+    tengine.RenderQueue.clear()
+
+def update():
+    if Game_State == GameState.MENU:
+        menu()
+    elif Game_State == GameState.GAME:
+        game()
+    
+
+if __name__ == '__main__':
+    tengine.init(yx_size = (20, 42), setup = setup, update = update, tickdelay = 0.13, bg_symbol=' ')
+    tengine.Gameloop()    

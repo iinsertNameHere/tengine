@@ -1,12 +1,28 @@
-from tengine import Point, puts, key_pressed, STATUS_ERROR
+from tengine import Point, key_pressed
 import tengine
 from random import randint
+from enum import IntEnum
 
+# Enum Classes
+class GameState(IntEnum):
+    MENU = 0
+    GAME = 1
+
+# Global Game Variables
 Player: Point
 Player_Velocity = 0
 Player_Body: list[Point] = []
 
-def BUILD_PLAYER():
+Pipes: list[tuple[Point, Point]] = []
+Pipe_Bodys: list[Point] = []
+Spawn_Delay = 0
+
+Game_State: GameState
+Score = 0
+Highscore = 0
+
+# Generator Functions
+def GeneratePlayer():
     return [
         Player - Point(1, 0),
         Player,
@@ -14,12 +30,8 @@ def BUILD_PLAYER():
         Player + Point(1, 0)
     ]
 
-Pipes: list[tuple[Point, Point]] = []
-Pipe_Bodys: list[Point] = []
-
-def BUILD_PIPES():
+def GeneratePipes():
     bodys = []
-    
     for pipe_pair in Pipes:
     
         # Build TOP Pipe
@@ -44,8 +56,7 @@ def BUILD_PIPES():
             
     return bodys
 
-Spawn_Delay = 0
-def SPAWN_PIPE():
+def SpawnPipe():
     global Pipes
     
     x = tengine.X_SIZE + 3
@@ -53,35 +64,7 @@ def SPAWN_PIPE():
     
     Pipes.append((Point(y, x), Point(y + 10, x)))
 
-GS_MENU = 0
-GS_GAME = 1
-
-Game_State: int
-
-Score = 0
-Highscore = 0
-
-def setup():
-    global Game_State, Player, Player_Velocity, Player_Body
-    global Pipes, Pipe_Bodys, Spawn_Delay, Score
-    
-    # Init Game State
-    Game_State = GS_MENU
-    
-    # Init Player
-    Player = Point(10, 15)
-    Player_Velocity = 0
-    Player_Body = BUILD_PLAYER()
-    
-    # Init Pipes
-    Pipes = []
-    Pipe_Bodys = []
-    
-    # Init Spawn Delay
-    Spawn_Delay = 0
-
-    Score = 0
-
+# Gamestate Functions
 def menu():
     global Game_State, Score, Highscore
 
@@ -96,7 +79,7 @@ def menu():
         " |   __| | .'| . | . | | |  | __ -| |  _| . | ",
         " |__|  |_|__,|  _|  _|_  |  |_____|_|_| |___| ",
         "             |_| |_| |___|                    ",
-        "   FlappyBird mady by iinsert using tengine   ",
+        "         FlappyBird made using tengine        ",
         "                                              ",
         "                                              ",
         "            [P - Play]   [Q - Quit]           "
@@ -106,7 +89,7 @@ def menu():
         tengine.quit()
     elif key_pressed('p'):
         setup()
-        Game_State = GS_GAME
+        Game_State = GameState.GAME
 
     tengine.RenderQueue.clear()
     tengine.Strings2RenderQueue(
@@ -131,12 +114,12 @@ def game():
     
     # Checking for Gameover
     if Player.y <= 0 or Player.y >= tengine.Y_SIZE - 1:
-        Game_State = GS_MENU
+        Game_State = GameState.MENU
         return
     
     for p in Player_Body:
         if p in Pipe_Bodys:
-            Game_State = GS_MENU
+            Game_State = GameState.MENU
             return
     
     # Graity Handling
@@ -147,13 +130,13 @@ def game():
         Player_Velocity -= 1
         Player.y += 2
     else:
-        print("Invalid Player Velocity!")
-        tengine.quit(STATUS_ERROR)
+        print("ERROR: Invalid Player Velocity!")
+        tengine.quit(tengine.Status.ERROR)
     
     # Handling pipe Spawning
     if Spawn_Delay <= 0:
         Spawn_Delay = 30
-        SPAWN_PIPE()
+        SpawnPipe()
         
     # Moving Pipes
     newpipes = []
@@ -181,13 +164,13 @@ def game():
     # Prep for next Tick
     tengine.RenderQueue.clear()
     
-    Pipe_Bodys = BUILD_PIPES()
+    Pipe_Bodys = GeneratePipes()
     for p in Pipe_Bodys:
-        tengine.RenderQueue.add(p, '#')
+        tengine.RenderQueue.add(p, '\u001b[32m#\u001b[0m')
     
-    Player_Body = BUILD_PLAYER()
+    Player_Body = GeneratePlayer()
     for p in Player_Body:
-        tengine.RenderQueue.add(p, 'O')
+        tengine.RenderQueue.add(p, '\u001b[33mO\u001b[0m')
 
     for pipe_pair in Pipes:
         if pipe_pair[0].x + 3 == Player.x:
@@ -201,13 +184,38 @@ def game():
 
     Spawn_Delay -= 1
 
+# Main Functions
+def setup():
+    global Game_State, Player, Player_Velocity, Player_Body
+    global Pipes, Pipe_Bodys, Spawn_Delay, Score
+    
+    # Init Game State
+    Game_State = GameState.MENU
+    
+    # Init Player
+    Player = Point(10, 15)
+    Player_Velocity = 0
+    Player_Body = GeneratePlayer()
+    
+    # Init Pipes
+    Pipes = []
+    Pipe_Bodys = []
+    
+    # Init Spawn Delay
+    Spawn_Delay = 0
+
+    Score = 0
+
 def update():
-    if Game_State == GS_MENU:
+    if Game_State == GameState.MENU:
         menu()
-    elif Game_State == GS_GAME:
+    elif Game_State == GameState.GAME:
         game()
+    else:
+        print("ERROR: Invalid Game State!")
+        tengine.quit(tengine.Status.ERROR)
         
     
 if __name__ == '__main__':
-    tengine.init(yx_size = (30, 70), setup = setup, update = update, tickdelay = 0.1)
+    tengine.init(yx_size = (30, 70), setup = setup, update = update, tickdelay = 0.1, bg_symbol=' ')
     tengine.Gameloop()    
