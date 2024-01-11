@@ -1,191 +1,213 @@
-import sys
-import os
-from time import sleep
+from tengine import Point, puts, key_pressed, STATUS_ERROR
+import tengine
 from random import randint
 
-if os.name == 'nt':
-    import msvcrt
-else:
-    import select
-    import tty
-    import termios
+Player: Point
+Player_Velocity = 0
+Player_Body: list[Point] = []
 
-os.system("")
-
-
-Y = 30
-X = 70
-X_OFFSET = 30
-X_MAX    = 40
-
-Y_OFFSET = 8
-Y_MAX    = 20
-
-def BUILD_PLAYER_BODY():
+def BUILD_PLAYER():
     return [
-        (PLAYER_POINT[0] - 1, PLAYER_POINT[1]),
-        (PLAYER_POINT[0], PLAYER_POINT[1]),
-        (PLAYER_POINT[0], PLAYER_POINT[1] + 1),
-        (PLAYER_POINT[0] + 1, PLAYER_POINT[1])
+        Player - Point(1, 0),
+        Player,
+        Player + Point(0, 1),
+        Player + Point(1, 0)
     ]
 
-def exit(e = 0):
-    if os.name != 'nt': termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-    sys.exit(e)	
+Pipes: list[tuple[Point, Point]] = []
+Pipe_Bodys: list[Point] = []
 
-def BUILD_OBJECT_BODY(obj, d):
-    body = []
-    x = obj[1]
-    
-    if d == OBJ_UP:
-        for y in range(0 - obj[0], 1):
-            y = y * (-1)
-            body += [(y, x - 1), (y, x), (y, x + 1)]
-    elif d == OBJ_DOWN:
-        for y in range(obj[0], Y):
-            body += [(y, x - 1), (y, x), (y, x + 1)]
-    else:
-        print("Invalid object direction!")
-        exit(1)
-    
-    return body
-
-def BUILD_OBJECT_BODYS():
+def BUILD_PIPES():
     bodys = []
-    for obj_pair in OBJECTS:
-        b1 = BUILD_OBJECT_BODY(obj_pair[0], OBJ_UP)
-        b2 = BUILD_OBJECT_BODY(obj_pair[1], OBJ_DOWN)
-        bodys += b1 + b2
     
+    for pipe_pair in Pipes:
+    
+        # Build TOP Pipe
+        for y in range(0, pipe_pair[0].y + 1):
+            bodys += [
+                Point(y, pipe_pair[0].x - 2),
+                Point(y, pipe_pair[0].x - 1),
+                Point(y, pipe_pair[0].x),
+                Point(y, pipe_pair[0].x + 1),
+                Point(y, pipe_pair[0].x + 2)
+            ]
+        
+        # Build BOTTOM Pipe
+        for y in range(pipe_pair[1].y, tengine.Y_SIZE):
+            bodys += [
+                Point(y, pipe_pair[1].x - 2),
+                Point(y, pipe_pair[1].x - 1),
+                Point(y, pipe_pair[1].x),
+                Point(y, pipe_pair[1].x + 1),
+                Point(y, pipe_pair[1].x + 2)
+            ]
+            
     return bodys
-        
-        
 
-PLAYER_POINT = (15, 6)
-PLAYER_BODY = BUILD_PLAYER_BODY()
-PLAYER_V = 0
-
-OBJ_UP = 0
-OBJ_DOWN = 1
-
-OBJECTS = []
-OBJECT_BODYS = []
-OBJ_MAX = 5
-
-__KEY__ = None     
-if os.name != 'nt':
-    old_settings = termios.tcgetattr(sys.stdin)
-    tty.setcbreak(sys.stdin.fileno())
-    def is_pressed(key):
-        global __KEY__
-        if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
-            __KEY__ = sys.stdin.read(1)
-            
-        if __KEY__ == key:
-            __KEY__ = None
-            return True
-        
-        return False
-else:
-    def is_pressed(key):
-        global __KEY__
-        if msvcrt.kbhit():
-            __KEY__ = msvcrt.getch().decode('utf-8')
-        
-        if __KEY__ == key:
-            __KEY__ = None
-            return True
-        
-        return False
-
-def puts(s):
-    sys.stdout.write(s)
-
-def display():
-    for y in range(0, Y):
-        for x in range(0, X):
-            if (y, x) == PLAYER_POINT:
-                puts('@')
-            elif (y, x) in PLAYER_BODY:
-                puts('O')
-            elif (y, x) in OBJECT_BODYS:
-                puts('#')
-            else:
-                puts('.')
-        puts('\n')
+Spawn_Delay = 0
+def SPAWN_PIPE():
+    global Pipes
     
-def move():
-    global PLAYER_POINT, PLAYER_V, PLAYER_BODY, OBJECTS, OBJECT_BODYS
+    x = tengine.X_SIZE + 3
+    y = randint(3, 20)
+    
+    Pipes.append((Point(y, x), Point(y + 10, x)))
 
-    y, x = PLAYER_POINT
+GS_MENU = 0
+GS_GAME = 1
 
-    if PLAYER_V > 0:
-        PLAYER_V -= 1
-        PLAYER_POINT = (y - 1, x)
-    elif PLAYER_V < 1:
-        PLAYER_V -= 1
-        PLAYER_POINT = (y + 1, x)
+Game_State: int
+
+Score = 0
+Highscore = 0
+
+def setup():
+    global Game_State, Player, Player_Velocity, Player_Body
+    global Pipes, Pipe_Bodys, Spawn_Delay, Score
+    
+    # Init Game State
+    Game_State = GS_MENU
+    
+    # Init Player
+    Player = Point(10, 15)
+    Player_Velocity = 0
+    Player_Body = BUILD_PLAYER()
+    
+    # Init Pipes
+    Pipes = []
+    Pipe_Bodys = []
+    
+    # Init Spawn Delay
+    Spawn_Delay = 0
+
+    Score = 0
+
+def menu():
+    global Game_State, Score, Highscore
+
+    if Score > Highscore:
+        Highscore = Score
+    
+    heighscore = [f"[ HIGHSCORE: {Highscore} ]"]
+    logo = [
+        "                                              ",
+        "  _____ _                    _____ _       _  ",
+        " |   __| |___ ___ ___ _ _   | __  |_|___ _| | ",
+        " |   __| | .'| . | . | | |  | __ -| |  _| . | ",
+        " |__|  |_|__,|  _|  _|_  |  |_____|_|_| |___| ",
+        "             |_| |_| |___|                    ",
+        "   FlappyBird mady by iinsert using tengine   ",
+        "                                              ",
+        "                                              ",
+        "            [P - Play]   [Q - Quit]           "
+    ]
+
+    if key_pressed('q'):
+        tengine.quit()
+    elif key_pressed('p'):
+        setup()
+        Game_State = GS_GAME
+
+    tengine.RenderQueue.clear()
+    tengine.Strings2RenderQueue(
+        logo,
+        Point(
+            int(tengine.Y_SIZE / 2) - int(len(logo) / 2),
+            int(tengine.X_SIZE / 2) - int(len(logo[0]) / 2)
+        )
+    )
+    if Highscore > 0:
+        tengine.Strings2RenderQueue(
+            heighscore,
+            Point(
+                int(tengine.Y_SIZE / 2) - (int(len(heighscore) / 2) + 5),
+                int(tengine.X_SIZE / 2) - int(len(heighscore[0]) / 2)
+            )
+        )
+
+def game():
+    global Player_Velocity, Player_Body, Player, Spawn_Delay
+    global Pipe_Bodys, Pipes, Game_State, Score
+    
+    # Checking for Gameover
+    if Player.y <= 0 or Player.y >= tengine.Y_SIZE - 1:
+        Game_State = GS_MENU
+        return
+    
+    for p in Player_Body:
+        if p in Pipe_Bodys:
+            Game_State = GS_MENU
+            return
+    
+    # Graity Handling
+    if Player_Velocity > 0:
+        Player_Velocity -= 1
+        Player.y -= 1
+    elif Player_Velocity < 1:
+        Player_Velocity -= 1
+        Player.y += 2
     else:
-        print("Unknown PLAYER_V!")
-        exit(1)
+        print("Invalid Player Velocity!")
+        tengine.quit(STATUS_ERROR)
     
-    NEW_OBJECTS = []
-    for obj_pair in OBJECTS:
-        obj1, obj2 = obj_pair
+    # Handling pipe Spawning
+    if Spawn_Delay <= 0:
+        Spawn_Delay = 30
+        SPAWN_PIPE()
         
-        obj1 = (obj1[0], obj1[1] - 1)
-        obj2 = (obj2[0], obj2[1] - 1)
+    # Moving Pipes
+    newpipes = []
+    for pipe_pair in Pipes:
+        pipe1, pipe2 = pipe_pair
         
-        if obj1[1] + 1 >= 0:
-            NEW_OBJECTS.append((obj1, obj2))
-    
-    OBJECTS = NEW_OBJECTS
+        pipe1 = Point(pipe1.y, pipe1.x - 1)
+        pipe2 = Point(pipe2.y, pipe2.x - 1)
         
-    PLAYER_BODY = BUILD_PLAYER_BODY()
-    OBJECT_BODYS = BUILD_OBJECT_BODYS()
-
-def spawn_object_pair():
-    global OBJECTS
+        if pipe1.x + 1 >= 0:
+            newpipes.append((pipe1, pipe2))
     
-    x = X + 3
-    y = randint(Y_OFFSET, Y_MAX)
+    Pipes = newpipes
     
-    OBJECTS.append(((y, x), (y + 10, x)))
-    
-def main():
-    global PLAYER_V, OBJECTS
-    
-    spawndelay = 0
-    
-    while True:
-        display()
-            
-        for p in PLAYER_BODY:
-            if p in OBJECT_BODYS:
-                exit()
-            
-        if is_pressed('f'):
-            if PLAYER_V > 0:
-                PLAYER_V = 5
+    # Keypress Handling
+    if key_pressed(tengine.KEY_SPACE):
+        if Player_Velocity <= 0:
+                Player_Velocity = 2
+        elif Player_Velocity > 0:
+            if Player_Velocity > 10:
+                Player_Velocity = 10
             else:
-                PLAYER_V = 2
-                
-        elif is_pressed('q'):
-            exit()
-        
-        move()
-        
-        if len(OBJECTS) <= OBJ_MAX and spawndelay <= 0:
-            spawndelay = 30
-            spawn_object_pair()
-        
-        if PLAYER_POINT[0] >= Y or PLAYER_POINT[0] < 0:
-            exit()
-        
-        puts(f"\033[{Y}A\r")
-        sleep(0.1)
-        
-        spawndelay -= 1
+                Player_Velocity += 2
     
-if __name__ == "__main__":
-    main()
+    # Prep for next Tick
+    tengine.RenderQueue.clear()
+    
+    Pipe_Bodys = BUILD_PIPES()
+    for p in Pipe_Bodys:
+        tengine.RenderQueue.add(p, '#')
+    
+    Player_Body = BUILD_PLAYER()
+    for p in Player_Body:
+        tengine.RenderQueue.add(p, 'O')
+
+    for pipe_pair in Pipes:
+        if pipe_pair[0].x + 3 == Player.x:
+            Score += 1
+
+    score = [f"[ SCORE: {Score} ]"]
+    tengine.Strings2RenderQueue(
+        score,
+        Point(1, int(tengine.X_SIZE / 2) - int(len(score[0]) / 2))
+    )
+
+    Spawn_Delay -= 1
+
+def update():
+    if Game_State == GS_MENU:
+        menu()
+    elif Game_State == GS_GAME:
+        game()
+        
+    
+if __name__ == '__main__':
+    tengine.init(yx_size = (30, 70), setup = setup, update = update, tickdelay = 0.1)
+    tengine.Gameloop()    
