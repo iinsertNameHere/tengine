@@ -1,4 +1,5 @@
 A terminal engine to create text based games.
-Examples:
+
+### Examples:
 - Flappy Bird
 - Snake
