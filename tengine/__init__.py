@@ -226,9 +226,12 @@ def Display():
         puts('\n')
     if __BORDER: puts("`" + ("-"*X_SIZE) + '´\n')
 
-def Gameloop():
+def Flush():
     global __LINES
-    
+    puts(f"\033[{__LINES}A\r")
+    __LINES = 0
+
+def Gameloop():
     if not __INITIALIZED:
         raise ValueError("Please run 'tengine.init' first!")
     
@@ -239,6 +242,5 @@ def Gameloop():
     
         __UPDATE_FN()
         
-        puts(f"\033[{__LINES}A\r")
-        __LINES = 0
+        Flush()
         sleep(__TICKDELAY)
