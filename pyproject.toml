@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tengine", "src/tengine_examples"]
+
+[project]
+name = "t-engine"
+version = "0.0.3"
+authors = [
+  { name="iinsert" },
+]
+description = "A terminal engine to create text based games!"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/iinsertNameHere"
+Issues = "https://github.com/iinsertNameHere/issues"

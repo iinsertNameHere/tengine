@@ -1,12 +1,3 @@
-# This code is only used to add the tengen module to the example scripts import path.
-# Do not include this part in you own projects 
-
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.absolute()))
-
-##############################################################################
-
 from tengine import Point, key_pressed
 import tengine
 import random
