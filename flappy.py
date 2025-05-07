@@ -1,4 +1,4 @@
-from tengine import Point, key_pressed
+from tengine import Point, key_pressed, unlock_input
 import tengine
 from random import randint
 from enum import IntEnum
@@ -205,6 +205,8 @@ def setup():
     Spawn_Delay = 0
 
     Score = 0
+    unlock_input()
+    
 
 def update():
     if Game_State == GameState.MENU:

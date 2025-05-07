@@ -144,19 +144,53 @@ class __RenderQueue:
     def clear(self):
         self.__queue = {}
 
+__INPUT_LOCKED = True
+def lock_input():
+    global __INPUT_LOCKED, __KEY
+    __INPUT_LOCKED = True
+    __KEY = None
+    if os.name == 'nt':
+        while msvcrt.kbhit():
+            msvcrt.getch()
+    else:
+        try:
+            while select.select([sys.stdin], [], [], 0)[0]:
+                sys.stdin.read(1)
+        except:
+            pass
+
+def unlock_input():
+    global __INPUT_LOCKED, __KEY
+    __INPUT_LOCKED = False
+    __KEY = None
+    if os.name == 'nt':
+        while msvcrt.kbhit():
+            msvcrt.getch()
+    else:
+        try:
+            while select.select([sys.stdin], [], [], 0)[0]:
+                sys.stdin.read(1)
+        except:
+            pass
+
 KEY_SPACE = ' '
 __KEY = None
 def key_pressed(key: str) -> bool:
     global __KEY
+
+    if __INPUT_LOCKED:
+        return False
+
     if os.name == 'nt':
         if msvcrt.kbhit():
             try:
                 __KEY = msvcrt.getch().decode('utf-8')
             except:
-                pass
+                __KEY = None
     else:
         if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
             __KEY = sys.stdin.read(1)
+
     if __KEY == key:
         __KEY = None
         return True
@@ -239,6 +273,8 @@ def Gameloop():
 
     while True:
         Display()
+
+        if __INPUT_LOCKED: sys.stdin.flush()
     
         __UPDATE_FN()
         

@@ -1,4 +1,4 @@
-from tengine import Point, key_pressed
+from tengine import Point, key_pressed, lock_input, unlock_input
 import tengine
 import random
 from enum import IntEnum
@@ -79,48 +79,48 @@ class Wallet:
 
 
 OBJ_DIAMOND = Object([
-" ______ ",
-"/_|__|_\\",
-"'.\  /.'",
-" '.\/.' ",
-"   ''   "
+r" ______ ",
+r"/_|__|_\ ",
+r"'.\  /.'",
+r" '.\/.' ",
+r"   ''   "
 ], dividend = 3)
 
 OBJ_BOWL = Object([ 
-" , \\  ",
-"()/°\\(_",
-"\\:::::/",
-" \\:::/ "
+r" , \  ",
+r"()/°\(_",
+r"\:::::/",
+r" \:::/ "
 ], dividend = 4)
 
 OBJ_BANANA = Object([ 
-" _ \'-_,# ",
-"_\'--','`|",
-"\`---`  / ",
-" `----'`  "
+r" _ '-_,# ",
+r"_'--','`|",
+r"\`---`  / ",
+r" `----'`  "
 ], dividend = 5)
 
 OBJ_PINEAPPLE = Object([
-" \\|/ ",
-" AXA ",
-"/XXX\\",
-"\\XXX/",
-" `^' "
+r" \|/ ",
+r" AXA ",
+r"/XXX\ ",
+r"\XXX/",
+r" `^' "
 ])
 
 OBJ_GRAPES = Object([
-"  \\   ",
-" ()() ",
-"()()()",
-" ()() ",
-"  ()  "
+r"  \   ",
+r" ()() ",
+r"()()()",
+r" ()() ",
+r"  ()  "
 ])
 
 OBJ_APPLE = Object([
-"  ,-/,. ",
-" / #   \\",
-"|      |",
-" `_,._,'"
+r"  ,-/,. ",
+r" / #   \ ",
+r"|      |",
+r" `_,._,'"
 ])
 
 SLOT1: Slot
@@ -178,6 +178,7 @@ def setup():
 
     STATE = GameState.START
     ON = True
+    unlock_input()
 
 def update():
     global STATE, SLOT1, SLOT2, SLOT3, ON, BALANCE
@@ -190,6 +191,7 @@ def update():
         tengine.quit()
 
     if (STATE == GameState.START):
+
         if (key_pressed('+')): BALANCE.add_bet(1)
         if (key_pressed('-')): BALANCE.remove_bet(1)
 
@@ -198,14 +200,15 @@ def update():
         tengine.RenderQueue.clear()
         Draw(DRAW_BOX = False)
         tengine.Strings2RenderQueue([
-            "   ___          _             ",            
-            "  / __\__ _ ___(_)_ __   ___  ",
-            " / /  / _` / __| | '_ \ / _ \ ",
-            "/ /__| (_| \__ \ | | | | (_) |",
-            "\____/\__,_|___/_|_| |_|\___/ "
+            r"   ___          _             ",            
+            r"  / __\__ _ ___(_)_ __   ___  ",
+            r" / /  / _` / __| | '_ \ / _ \ ",
+            r"/ /__| (_| \__ \ | | | | (_) |",
+            r"\____/\__,_|___/_|_| |_|\___/ "
         ], Point(3, 21))
 
     elif (STATE == GameState.ROLLING):
+        lock_input()
         tengine.RenderQueue.clear()
 
         if (SLOT1.origin.y >= 10):

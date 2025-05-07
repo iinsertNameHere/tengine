@@ -1,4 +1,4 @@
-from tengine import Point, key_pressed
+from tengine import Point, key_pressed, unlock_input
 import tengine
 from enum import IntEnum
 from random import randint
@@ -37,7 +37,7 @@ def menu():
         "                           ",
         "    ____          __       ",
         "   / __/__  ___ _/ /_____  ",
-        "  _\\ \/ _ \\/ _ `/  '_/ -_) ",
+        "  _\\ \\/ _ \\/ _ `/  '_/ -_) ",
         " /___/_//_/\\_,_/_/\\_\\\\__/  ",
         "  Snake made using tengine ",
         "                           ",
@@ -140,6 +140,7 @@ def setup():
     Apple = None
 
     tengine.RenderQueue.clear()
+    unlock_input()
 
 def update():
     if Game_State == GameState.MENU:
