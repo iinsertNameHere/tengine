@@ -20,10 +20,10 @@ class Menu(Scene):
         self.input_manager.add_binding('-', lambda k: self.lower_mode())
         self.logo = [
             "                           ",
-            f"{Color.fg.green}    ____          __       ",
-            f"{Color.fg.green}   / __/__  ___ _/ /_____  ",
-            f"{Color.fg.green}  _\\ \\/ _ \\/ _ `/  '_/ -_) ",
-            f"{Color.fg.green} /___/_//_/\\_,_/_/\\_\\\\__/  ",
+            f"{Color.fg.green}    ____          __       {Color.reset}",
+            f"{Color.fg.green}   / __/__  ___ _/ /_____  {Color.reset}",
+            f"{Color.fg.green}  _\\ \\/ _ \\/ _ `/  '_/ -_) {Color.reset}",
+            f"{Color.fg.green} /___/_//_/\\_,_/_/\\_\\\\__/  {Color.reset}",
             f"{Color.fg.lightblue}  Snake made using tengine {Color.reset}",
             "                           ",
             f"   {Color.fg.black}{Color.bold}{Color.bg.purple}[P - Play]{Color.reset}  {Color.fg.black}{Color.bold}{Color.bg.red}[Q - Quit]{Color.reset}  "

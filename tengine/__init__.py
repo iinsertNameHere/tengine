@@ -162,7 +162,7 @@ class RenderManager:
         sys.stdout.write(s)
 
     def display(self, render_queue: RenderQueue, bg_symbol: str):
-        if self.__border: self.puts("." + ("-"*self.__x_size) + '.\n')
+        if self.__border: self.puts(f"." + ("-"*self.__x_size) + '.\n')
         for y in range(0, self.__y_size):
             if self.__border: self.puts('|')
             for x in range(0, self.__x_size):
@@ -229,11 +229,9 @@ class InputManager:
 
 
 class Scene:
-    def __init__(self, tickdelay: float = 0.08, bg_symbol: chr = ' ',
-    bg_symbol_fg: fgcolor = Color.reset, bg_symbol_bg: bgcolor = Color.reset,
-    bg_symbol_fmrt: frmt = Color.reset):
+    def __init__(self, tickdelay: float = 0.08, bg_symbol: chr = ' '):
         self.tickdelay: float = tickdelay
-        self.bg_symbol: chr = bg_symbol_fg + bg_symbol_bg + bg_symbol_fmrt + bg_symbol
+        self.bg_symbol: chr = bg_symbol
         self.render_queue = RenderQueue()
         self.input_manager = InputManager()
 
