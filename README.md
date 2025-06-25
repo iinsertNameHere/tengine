@@ -1,14 +1,7 @@
 <div align="center">
-    <img src="img/tengine-logo.png" style="max-width: 200px; margin: 0;">
-    <h3 style="font-size: 80; margin: 0;">tengine</h3>
-    <p style="font-size: 25; margin: 0;">Terminal based Game Engine</p>
-</div>
-<br>
-
----
-
-<div align="center">
-<p style="margin: 0" ><a href="#features">Features</a> • <a href="#showcase">Showcase</a> • <a href="#getting-started">Getting Startet</a> • <a href="#core-components">Core Components</a> • <a href="#advanced-features">Advanced Features</a> • <a href="#example-games">Example Games</a> • <a href="#roadmap">Roadmap</a> • <a href="#contributing">Contributing</a></p>
+    <img src="img/tengine-logo.png" style="width: 250px; margin: 0;">
+    <h1>tengine - Terminal based Game Engine</h3>
+    <p><a href="#features">Features</a> • <a href="#showcase">Showcase</a> • <a href="#getting-started">Getting Startet</a> • <a href="#core-components">Core Components</a> • <a href="#advanced-features">Advanced Features</a> • <a href="#example-games">Example Games</a> • <a href="#roadmap">Roadmap</a> • <a href="#contributing">Contributing</a></p>
 </div>
 
 ---
@@ -213,17 +206,15 @@ Planned features:
 ## Contributing
 Contributions are welcome! Thx 💜
 
-<p align="center">
-  <a href = "https://github.com/iinsertNameHere/tengine/graphs/contributors">
-     <img src = "https://contrib.rocks/image?repo=iinsertNameHere/tengine">
-  </a>
-</p>
-
+<a href = "https://github.com/iinsertNameHere/tengine/graphs/contributors">
+    <img src = "https://contrib.rocks/image?repo=iinsertNameHere/tengine">
+</a>
 
 <br>
 <br>
 
+---
 
-<p align="center">
+<div align="center">
     <img src="https://api.lucabubi.me/chart?username=iinsertNameHere&repository=tengine">
-</p>
+</div>
