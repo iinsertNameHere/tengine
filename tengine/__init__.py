@@ -12,6 +12,9 @@ else:
     import termios
 
 class Point:
+    pass
+
+class Point:
     def __init__(self, x: int = 0, y: int = 0):
         self.y = y
         self.x = x
@@ -19,79 +22,80 @@ class Point:
     def __repr__(self) -> str:
         return f"({self.x}, {self.y})"
     
-    def __add__(self, p):
+    def __add__(self, p: Point) -> Point:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         return Point(self.x + p.x, self.y + p.y)
     
-    def __iadd__(self, p):
+    def __iadd__(self, p: Point) -> Point:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         self.x += p.x
         self.y += p.y
         return self
         
-    def __radd__(self, p):
+    def __radd__(self, p: Point) -> Point:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         return self.__add__(p)
         
-    def __sub__(self, p):
+    def __sub__(self, p: Point) -> Point:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         return Point(self.x - p.x, self.y - p.y)
     
-    def __isub__(self, p):
+    def __isub__(self, p: Point) -> Point:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         self.y -= p.y
         self.x -= p.x
         return self
         
-    def __rsub__(self, p):
+    def __rsub__(self, p: Point) -> Point:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         return self.__sub__(p)
         
-    def __eq__(self, p):
+    def __eq__(self, p: Point) -> bool:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.x, self.y) == (p.x, p.y)
     
-    def __ne__(self, p):
+    def __ne__(self, p: Point) -> bool:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.x, self.y) != (p.x, p.y)
     
-    def __gt__(self, p):
+    def __gt__(self, p: Point) -> bool:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.x, self.y) > (p.x, p.y)
     
-    def __lt__(self, p):
+    def __lt__(self, p: Point) -> bool:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.x, self.y) < (p.x, p.y)
     
-    def __ge__(self, p):
+    def __ge__(self, p: Point) -> bool:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.x, self.y) > (p.x, p.y)
     
-    def __le__(self, p):
+    def __le__(self, p: Point) -> bool:
         if type(p) != type(self):
             raise ValueError(f"{p} is not of type tengine.Point!")
         return (self.x, self.y) < (p.x, p.y)
-    
+
     def dup(self):
-        """
-            Returns a duplicate of itself
-        """
-        return Point(self.x, self.y)
+        """ Returns a duplicate of this point """
+        return Point(self.x, self.y) 
 
 class RenderQueue:
-    def __init__(self, queue: dict = {}):
-        self.__queue: dict[tuple[int, int]] = queue
+    pass
+
+class RenderQueue:
+    def __init__(self, queue: dict[tuple[int, int], str] = {}):
+        self.__queue: dict[tuple[int, int], str] = queue
 
     def __repr__(self) -> str:
         return str(self.__queue)
@@ -99,17 +103,17 @@ class RenderQueue:
     def __str__(self) -> str:
         return str(self.__queue)
 
-    def __add__(self, rq):
+    def __add__(self, rq: RenderQueue) -> RenderQueue:
         if type(rq) != type(self):
             raise ValueError(f"{rq} is not of type tengine.RenderQueue!")
         return RenderQueue(self.__queue + rq.asDict())
 
-    def __iadd__(self, rq):
+    def __iadd__(self, rq: RenderQueue) -> RenderQueue:
         if type(rq) != type(self):
             raise ValueError(f"{rq} is not of type tengine.RenderQueue!")
         self.__queue += rq.asDict()
         
-    def __radd__(self, rq):
+    def __radd__(self, rq: RenderQueue) -> RenderQueue:
         if type(rq) != type(self):
             raise ValueError(f"{rq} is not of type tengine.RenderQueue!")
         return self.__add__(rq)
@@ -123,10 +127,10 @@ class RenderQueue:
     def get(self, point) -> str|None:
         return self.__queue.get((point.x, point.y))
     
-    def add_point(self, point: Point, symbol: str):
+    def add_point(self, point: Point, symbol: str) -> None:
         self.__queue[(point.x, point.y)] = symbol
 
-    def add_string(self, string: str, origin: Point):
+    def add_string(self, string: str, origin: Point) -> None:
         lines = string.split("\n")
         lines2d = [split_and_group_ansi(l.replace("\n", "")) for l in lines]
         origins = (origin, Point(origin.x + len(lines2d[0]), origin.y + len(lines2d)))
@@ -146,22 +150,22 @@ class RenderQueue:
             ch = lines2d[idx.y][idx.x]
             self.add_point(point, ch)
 
-    def clear(self):
+    def clear(self) -> None:
         self.__queue = {}
 
 class RenderManager:
-    def __init__(self, x_size, y_size, border):
+    def __init__(self, x_size: int, y_size: int, border: bool):
         self.__x_size = x_size
         self.__y_size = y_size
         self.__border = border
         self.__lines = 0
     
-    def puts(self, s: str, overwrite: bool = True):
+    def puts(self, s: str, overwrite: bool = True) -> None:
         if '\n' in s and overwrite:
             self.__lines += 1
         sys.stdout.write(s)
 
-    def display(self, render_queue: RenderQueue, bg_symbol: str):
+    def display(self, render_queue: RenderQueue, bg_symbol: str) -> None:
         if self.__border: self.puts(f"." + ("-"*self.__x_size) + '.\n')
         for y in range(0, self.__y_size):
             if self.__border: self.puts('|')
@@ -177,7 +181,8 @@ class RenderManager:
             self.puts('\n')
         if self.__border: self.puts("`" + ("-"*self.__x_size) + '´\n')
 
-    def flush(self):
+    def flush(self) -> None:
+        """ Moves the cursor back to Point(0,0) """
         self.puts(f"\033[{self.__lines}A\r")
         self.__lines = 0
     
@@ -210,20 +215,20 @@ class InputManager:
             return True
         return False
 
-    def add_binding(self, key: chr, handler: handler_func):
+    def add_binding(self, key: chr, handler: handler_func) -> None:
         if self.__bindings.get(key):
             raise ValueError(f"Binding for key '{key}' already exists!")
         self.__bindings[key] = handler
 
-    def block_key(self, key):
+    def block_key(self, key: chr) -> None:
         if key not in self.__blocked_keys:
             self.__blocked_keys.append(key)
     
-    def allow_key(self, key):
+    def allow_key(self, key: chr) -> None:
         if key in self.__blocked_keys:
             self.__blocked_keys.remove(key)
 
-    def update(self):
+    def update(self) -> None:
         for key in self.__bindings.keys():
             if self.__key_pressed(key): self.__bindings[key](key)
 
@@ -235,10 +240,12 @@ class Scene:
         self.render_queue = RenderQueue()
         self.input_manager = InputManager()
 
-    def setup(self):
+    def setup(self) -> None:
+        """ Overwrite this function with your own logic """
         pass
 
-    def update(self):
+    def update(self) -> None:
+        """ Overwrite this function with your own logic """
         pass
 
 
@@ -258,29 +265,29 @@ class Game:
 
         self.render_manager = RenderManager(x_size, y_size, border)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         if os.name != 'nt':
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.__old_settings)
 
-    def quit(self, status: int = None):
+    def quit(self, status: int = None) -> None:
         if status == None:
             status = self.__quit_status
         self.cleanup()
         exit(status)
 
-    def add_scene(self, name: str, scene: Scene):
+    def add_scene(self, name: str, scene: Scene) -> None:
         if self.__scenes.get(name):
             raise ValueError(f'A Scene with the name "{name}" already exists!')
 
         self.__scenes[name] = scene
     
-    def set_scene(self, name: str):
+    def set_scene(self, name: str) -> None:
         if not self.__scenes.get(name):
             raise ValueError(f'A Scene with the name "{name}" dose not exists! Add scenes by using the Geme.add_scene function.')
 
         self.__active_scene = name
 
-    def run(self):
+    def run(self) -> None:
         if not self.__active_scene:
             raise RuntimeError("No active Scene was set! Please use Game.set_scene to do so.")
         
