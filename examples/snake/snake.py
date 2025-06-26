@@ -70,6 +70,7 @@ class Play(Scene):
         self.input_manager.add_binding('a', lambda k: self.set_direction("left"))
         self.input_manager.add_binding('s', lambda k: self.set_direction("down"))
         self.input_manager.add_binding('d', lambda k: self.set_direction("right"))
+        self.frame_counter = 0
     
     def set_direction(self, new_dir):
         # Prevent 180-degree turns
@@ -87,21 +88,22 @@ class Play(Scene):
 
     def setup(self):
         self.tickdelay = modes[mode_idx][1]
-
         self.direction = "right"
         self.snake = [center_point.dup(), 
                      Point(center_point.x-1, center_point.y),
                      Point(center_point.x-2, center_point.y)]
         self.score = 0
+        self.frame_counter = 0
         self.spawn_food()
 
     def update(self):
         global highscore
-        
-        # Move snake
+        self.frame_counter += 1
+
+        # Move snake only on even frames for vertical movement
         head = self.snake[0].dup()
         if self.direction == "up":
-            head.y -= 1
+            head.y -= 1 
         elif self.direction == "down":
             head.y += 1
         elif self.direction == "left":
@@ -138,9 +140,9 @@ class Play(Scene):
         # Render snake
         for i, segment in enumerate(self.snake):
             if i == 0:  # Head
-                self.render_queue.add_point(segment, f"{Color.fg.green}@{Color.reset}")
+                self.render_queue.add_point(Point(int(segment.x), int(segment.y)), f"{Color.fg.green}@{Color.reset}")
             else:  # Body
-                self.render_queue.add_point(segment, f"{Color.fg.green}O{Color.reset}")
+                self.render_queue.add_point(Point(int(segment.x), int(segment.y)), f"{Color.fg.green}O{Color.reset}")
 
 if __name__ == '__main__':
     game.add_scene("menu", Menu())

@@ -3,6 +3,8 @@ import os
 from time import sleep
 from enum import IntEnum
 from .color import Color, fgcolor, bgcolor, frmt, len_no_ansi, split_and_group_ansi
+import math
+from collections import defaultdict
 
 if os.name == 'nt':
     import msvcrt
@@ -106,12 +108,16 @@ class RenderQueue:
     def __add__(self, rq: RenderQueue) -> RenderQueue:
         if type(rq) != type(self):
             raise ValueError(f"{rq} is not of type tengine.RenderQueue!")
-        return RenderQueue(self.__queue + rq.asDict())
+        d = {}
+        d.update(self.__queue)
+        d.update(rg.asDict())
+        return RenderQueue(d)
 
     def __iadd__(self, rq: RenderQueue) -> RenderQueue:
         if type(rq) != type(self):
             raise ValueError(f"{rq} is not of type tengine.RenderQueue!")
-        self.__queue += rq.asDict()
+        self.__queue.update(rq.asDict())
+        return self
         
     def __radd__(self, rq: RenderQueue) -> RenderQueue:
         if type(rq) != type(self):
@@ -150,8 +156,277 @@ class RenderQueue:
             ch = lines2d[idx.y][idx.x]
             self.add_point(point, ch)
 
+    def add_line(self, point0: Point, point1: Point, symbol: str) -> list[Point]:
+        x0 = point0.x
+        y0 = point0.y
+        x1 = point1.x
+        y1 = point1.y
+
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx - dy
+
+        points = []
+        while True:
+            points.append(Point(x0, y0))
+            if x0 == x1 and y0 == y1:
+                break
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x0 += sx
+            if e2 < dx:
+                err += dx
+                y0 += sy
+        
+        for p in points:
+            self.add_point(p, symbol)
+
+        return points
+
+    def add_circle(self, origin: Point, radius: int, symbol: str, filled=False, cell_width=2, cell_height=1) -> list[Point]:
+        xc = origin.x
+        yc = origin.y
+        r = radius
+
+        points = []
+        aspect_ratio = cell_width / cell_height
+        r_scaled_x = r * aspect_ratio  # Scale radius for X-axis
+        
+        # First get all boundary points
+        for angle in range(0, 360, 1):  # 1-degree steps for smoothness
+            rad = math.radians(angle)
+            x = round(xc + r_scaled_x * math.cos(rad))
+            y = round(yc + r * math.sin(rad))
+            points.append(Point(x, y))
+        
+        if filled:
+            # Get min/max y to scan vertically
+            min_y = yc - r
+            max_y = yc + r
+            
+            for y in range(min_y, max_y + 1):
+                # Calculate left/right boundaries at this y level
+                y_rel = y - yc
+                if abs(y_rel) > r:
+                    continue
+                    
+                # Calculate x bounds (scaled by aspect ratio)
+                x_width = math.sqrt(r**2 - y_rel**2) * aspect_ratio
+                x_start = round(xc - x_width)
+                x_end = round(xc + x_width)
+                
+                # Add all horizontal points between boundaries
+                for x in range(x_start, x_end + 1):
+                    points.append(Point(x, y))
+        
+
+        for p in points:
+            self.add_point(p, symbol)
+        
+        return points
+
+    def add_rectangle(self, top_left: Point, width: int, height: int, symbol: str, filled=False) -> list[Point]:
+        """Draw a rectangle with optional fill."""
+        points = []
+        x1, y1 = top_left.x, top_left.y
+        x2, y2 = x1 + width - 1, y1 + height - 1
+
+        if filled:
+            for y in range(y1, y2 + 1):
+                for x in range(x1, x2 + 1):
+                    points.append(Point(x, y))
+        else:
+            # Draw four sides
+            for x in range(x1, x2 + 1):
+                points.append(Point(x, y1))  # Top
+                points.append(Point(x, y2))  # Bottom
+            for y in range(y1 + 1, y2):
+                points.append(Point(x1, y))  # Left
+                points.append(Point(x2, y))  # Right
+
+        for p in points:
+            self.add_point(p, symbol)
+        return points
+
+    def add_triangle(self, p1: Point, p2: Point, p3: Point, symbol: str, filled=False) -> list[Point]:
+        """Draw a triangle with optional fill."""
+        points = []
+        
+        def sign(a: Point, b: Point, c: Point) -> float:
+            return (a.x - c.x) * (b.y - c.y) - (b.x - c.x) * (a.y - c.y)
+
+        # Find bounding box
+        min_x = min(p1.x, p2.x, p3.x)
+        max_x = max(p1.x, p2.x, p3.x)
+        min_y = min(p1.y, p2.y, p3.y)
+        max_y = max(p1.y, p2.y, p3.y)
+
+        if filled:
+            # Barycentric coordinate method for fill
+            for y in range(min_y, max_y + 1):
+                for x in range(min_x, max_x + 1):
+                    p = Point(x, y)
+                    d1 = sign(p, p1, p2)
+                    d2 = sign(p, p2, p3)
+                    d3 = sign(p, p3, p1)
+
+                    has_neg = (d1 < 0) or (d2 < 0) or (d3 < 0)
+                    has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0)
+
+                    if not (has_neg and has_pos):
+                        points.append(p)
+        else:
+            # Draw three edges
+            points.extend(self.add_line(p1, p2, symbol))
+            points.extend(self.add_line(p2, p3, symbol))
+            points.extend(self.add_line(p3, p1, symbol))
+
+        for p in points:
+            self.add_point(p, symbol)
+        return points
+
     def clear(self) -> None:
         self.__queue = {}
+
+class Sprite:
+    def __init__(self, pixels: list, width: int, height: int, transparent_color: tuple = (0, 0, 0)):
+        self.pixels = pixels
+        self.width = width
+        self.height = height
+        self.transparent_color = transparent_color
+    
+    def flip(self, horizontal: bool, vertical: bool):
+        """Flip sprite along axes"""
+        new_pixels = []
+        for y in range(self.height):
+            new_y = self.height - 1 - y if vertical else y
+            row = []
+            for x in range(self.width):
+                new_x = self.width - 1 - x if horizontal else x
+                row.append(self.pixels[new_y][new_x])
+            new_pixels.append(row)
+        self.pixels = new_pixels
+        return self
+
+    def dup(self):
+        return Sprite(self.pixels, self.width, self.height, self.transparent_color)
+
+class SpriteManager:
+    def __init__(self):
+        self.sprites = {}
+    
+    def load_sprite(self, name: str, filepath: str, transparent_color: tuple = (0, 0, 0)) -> Sprite:
+        """Load PPM file into sprite storage with optional transparency"""
+        pixels, width, height = self._load_ppm(filepath)
+        # Ensure even height for proper half-block pairing
+        if height % 2 != 0:
+            height -= 1
+            pixels = pixels[:height]
+        self.sprites[name] = Sprite(pixels, width, height, transparent_color)
+        return self.sprites[name]
+    
+    def render_sprite(
+        self,
+        rq: RenderQueue,
+        sprite_name: str,
+        origin: Point,
+        center_origin: bool = False,
+        flip_h: bool = False,
+        flip_v: bool = False,
+        bg_symbol_fmrt: str = ''
+    ) -> list[Point]:
+        """Render sprite to render queue using half-block characters with transparency"""
+        sprite = self.sprites[sprite_name]
+        
+        # Create flipped copy if needed
+        sprite_copy = sprite.dup().flip(flip_h, flip_v)
+        
+        # Calculate offsets if centering
+        x_offset = -sprite_copy.width // 2 if center_origin else 0
+        y_offset = -sprite_copy.height // 4 if center_origin else 0  # Divided by 4 because we're combining 2 rows
+        
+        points = []
+
+        # Process pixels in vertical pairs
+        for y in range(0, sprite_copy.height - 1, 2):
+            for x in range(sprite_copy.width):
+                # Get top and bottom pixels
+                top_pixel = sprite_copy.pixels[y][x]
+                bottom_pixel = sprite_copy.pixels[y+1][x] if y+1 < sprite_copy.height else sprite_copy.transparent_color
+                
+                # Skip if both pixels are transparent
+                if (top_pixel == sprite_copy.transparent_color and 
+                    bottom_pixel == sprite_copy.transparent_color):
+                    continue
+                
+                # Create colored half-block character
+                if top_pixel == sprite_copy.transparent_color:
+                    # Only bottom pixel has color - use lower half block
+                    char = f"{Color.rgb2fg(*bottom_pixel)}{bg_symbol_fmrt}▄{Color.reset}"
+                elif bottom_pixel == sprite_copy.transparent_color:
+                    # Only top pixel has color - use upper half block
+                    char = f"{Color.rgb2fg(*top_pixel)}{bg_symbol_fmrt}▀{Color.reset}"
+                else:
+                    # Both pixels have color - combine them
+                    char = (f"{Color.rgb2fg(*top_pixel)}"
+                           f"{Color.rgb2bg(*bottom_pixel)}"
+                           f"▀{Color.reset}")
+                
+                # Calculate position
+                px = origin.x + x + x_offset
+                py = origin.y + (y // 2) + y_offset
+                
+                # Add to render queue
+                rq.add_point(Point(px, py), char)
+                points.append(Point(px, py))
+
+        return points
+    
+    def _load_ppm(self, filepath: str) -> tuple:
+        """Load PPM file (P3 or P6 format) - unchanged from previous version"""
+        with open(filepath, 'rb') as f:
+            magic = f.readline().decode('ascii').strip()
+            if magic not in ('P3', 'P6'):
+                raise ValueError("Unsupported PPM format")
+            
+            # Read dimensions
+            while True:
+                line = f.readline().decode('ascii').strip()
+                if not line.startswith('#'):
+                    break
+            width, height = map(int, line.split())
+            max_val = int(f.readline().decode('ascii').strip())
+            
+            # Read pixel data
+            pixels = []
+            if magic == 'P6':
+                data = f.read()
+                index = 0
+                for _ in range(height):
+                    row = []
+                    for _ in range(width):
+                        row.append((data[index], data[index+1], data[index+2]))
+                        index += 3
+                    pixels.append(row)
+            else:  # P3
+                data = []
+                for line in f:
+                    data.extend(line.decode('ascii').strip().split())
+                index = 0
+                for _ in range(height):
+                    row = []
+                    for _ in range(width):
+                        r = int(data[index])
+                        g = int(data[index+1])
+                        b = int(data[index+2])
+                        row.append((r, g, b))
+                        index += 3
+                    pixels.append(row)
+        
+        return pixels, width, height
 
 class RenderManager:
     def __init__(self, x_size: int, y_size: int, border: bool):
@@ -165,7 +440,7 @@ class RenderManager:
             self.__lines += 1
         sys.stdout.write(s)
 
-    def display(self, render_queue: RenderQueue, bg_symbol: str) -> None:
+    def display(self, render_queue: RenderQueue, bg_symbol: str, bg_symbol_fmrt: str) -> None:
         if self.__border: self.puts(f"." + ("-"*self.__x_size) + '.\n')
         for y in range(0, self.__y_size):
             if self.__border: self.puts('|')
@@ -173,10 +448,10 @@ class RenderManager:
                 symbol = render_queue.get(Point(x, y))
                 if symbol:
                     if '\0' in symbol:
-                        symbol = symbol.replace('\0', bg_symbol)
+                        symbol = symbol.replace('\0', bg_symbol_fmrt + bg_symbol + Color.reset)
                     self.puts(symbol)
                 else:
-                    self.puts(bg_symbol)
+                    self.puts(bg_symbol_fmrt + bg_symbol + Color.reset)
             if self.__border: self.puts('|')
             self.puts('\n')
         if self.__border: self.puts("`" + ("-"*self.__x_size) + '´\n')
@@ -232,13 +507,13 @@ class InputManager:
         for key in self.__bindings.keys():
             if self.__key_pressed(key): self.__bindings[key](key)
 
-
 class Scene:
-    def __init__(self, tickdelay: float = 0.08, bg_symbol: chr = ' '):
+    def __init__(self, tickdelay: float = 0.08, bg_symbol: chr = ' ', bg_symbol_fmrt: str = ''):
         self.tickdelay: float = tickdelay
         self.bg_symbol: chr = bg_symbol
         self.render_queue = RenderQueue()
         self.input_manager = InputManager()
+        self.bg_symbol_fmrt = bg_symbol_fmrt
 
     def setup(self) -> None:
         """ Overwrite this function with your own logic """
@@ -301,7 +576,7 @@ class Game:
                 scene.render_queue.clear()
                 scene.setup()
 
-            self.render_manager.display(scene.render_queue, scene.bg_symbol)
+            self.render_manager.display(scene.render_queue, scene.bg_symbol, scene.bg_symbol_fmrt)
 
             scene.render_queue.clear()
             scene.update()

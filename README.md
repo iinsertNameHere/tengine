@@ -32,8 +32,14 @@ This is an example of what tengine is capable of:
 <div align="left">
     <img style="max-width: 350px" src="img/screenshot1.jpg">
     <img style="max-width: 350px" src="img/screenshot2.jpg">
+    <img style="max-width: 550px" src="img/screenshot3.png">
+    <img style="max-width: 550px" src="img/screenshot4.png">
+    <img style="max-width: 550px" src="img/screenshot5.png">
 </div>
 </details>
+
+> [!NOTE]  
+> Still all running in the terminal. Even the flappybird clone. :)
 
 ## Getting Started
 
@@ -181,8 +187,10 @@ print(p1 > p2)  # → True
 ```
 
 ## Example Games
+### Snake
 The repository includes a complete Snake game:
 ```bash
+mv examples/snake/* .
 python3 snake.py
 ```
 The game gives a simple usage example for tengine.
@@ -193,7 +201,24 @@ This includes:
 - Multiple scenes
 - Dynamic object rendering
 
-Take a look at [snake.py](snake.py) to lern more about how the game works.
+Take a look at [snake.py](examples/snake/snake.py) to lern more about how the game works.
+
+### Flappybord
+The repository also includes a complete Flappybord clone:
+```bash
+mv examples/flappybird/* .
+python3 flappybird.py
+```
+The game gives a advanced usage example for tengine.
+This includes:
+- The rgb coloring system
+- Saving game states
+- Input management
+- Multiple scenes
+- Dynamic .ppm sprite rendering.
+- Collison detection using collider boxes.
+
+Take a look at [flappybird.py](examples/flappybird/flappybird.py) to lern more about how the game works.
 
 ## Roadmap
 Planned features:

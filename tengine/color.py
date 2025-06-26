@@ -58,7 +58,7 @@ def split_and_group_ansi(text: str) -> list[str]:
     if pending_ansi:
         # Try to attach to previous character
         if segments and not ansi_pattern.fullmatch(segments[-1]):
-            segments[-1] = ''.join(pending_ansi) + segments[-1]
+            segments[-1] = segments[-1] + ''.join(pending_ansi)
         else:
             # No previous character to attach to
             segments.append(''.join(pending_ansi) + '\0')
@@ -97,6 +97,7 @@ class Color:
         lightblue: fgcolor = '\033[94m'
         pink: fgcolor = '\033[95m'
         lightcyan: fgcolor = '\033[96m'
+        white: fgcolor = '\033[97m'
 
     class bg:
         black: bgcolor = '\033[40m'
@@ -107,3 +108,18 @@ class Color:
         purple: bgcolor = '\033[45m'
         cyan: bgcolor = '\033[46m'
         lightgrey: bgcolor = '\033[47m'
+        darkgrey: bgcolor = '\033[100m'
+        lightred: bgcolor = '\033[101m'
+        lightgreen: bgcolor = '\033[102m'
+        yellow: bgcolor = '\033[103m'
+        lightblue: bgcolor = '\033[104m'
+        pink: bgcolor = '\033[105m'
+        lightcyan: bgcolor = '\033[106m'
+        white: bgcolor = '\033[107m'
+
+    def rgb2fg(r: int, g: int, b: int) -> str:
+        return f'\033[38;2;{r};{g};{b}m'
+    def rgb2bg(r: int, g: int, b: int) -> str:
+        return f'\033[48;2;{r};{g};{b}m'
+
+    
