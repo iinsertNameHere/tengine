@@ -1,11 +1,14 @@
-from tengine import Game, Scene, Point
-from tengine.color import Color, len_no_ansi
 from time import sleep
 import random
 import json
 import os
 
+from tengine.core import Game, Scene
+from tengine.core.geometry import Point
+from tengine.core.color import Color, len_no_ansi
+
 game = Game(42, 20)
+
 center_point = Point(int(game.x_size / 2), int(game.y_size / 2))
 highscores = {"EASY": 0, "NORMAL": 0, "HARD": 0, "ULTRA": 0}
 mode_idx = 1
@@ -14,10 +17,10 @@ modes = [("EASY", 0.18), ("NORMAL", 0.13), ("HARD", 0.07), ("ULTRA", 0.04)]
 class Menu(Scene):
     def __init__(self):
         super().__init__(0.1, ' ')
-        self.input_manager.add_binding('q', lambda k: self.save_and_quit())
-        self.input_manager.add_binding('p', lambda k: game.set_scene("play"))
-        self.input_manager.add_binding('+', lambda k: self.raise_mode())
-        self.input_manager.add_binding('-', lambda k: self.lower_mode())
+        self.input_manager.add_binding('q', self.save_and_quit)
+        self.input_manager.add_binding('p', lambda: game.set_scene("play"))
+        self.input_manager.add_binding('+', self.raise_mode)
+        self.input_manager.add_binding('-', self.lower_mode)
         self.logo = [
             "                           ",
             f"{Color.fg.green}    ____          __       {Color.reset}",
@@ -48,28 +51,34 @@ class Menu(Scene):
         pass
 
     def update(self):
-        highscore_display = f"[ {Color.bold}HIGHSCORE: {Color.fg.green}{highscores[modes[mode_idx][0]]}{Color.reset} ]"
-        self.render_queue.add_string(highscore_display, 
-                                  Point(center_point.x - len_no_ansi(highscore_display)//2, 2))
-        self.render_queue.add_string('\n'.join(self.logo), 
-                                  Point(center_point.x - len_no_ansi(self.logo[0])//2, 
-                                        center_point.y - len(self.logo)//2))
+
+        # Draw Highscore
+        self.render_queue.draw_text(
+            f"[ {Color.bold}HIGHSCORE: {Color.fg.green}{highscores[modes[mode_idx][0]]}{Color.reset} ]",
+            Point(center_point.x, 2), center=True
+        )
+
+        # Draw Logo
+        self.render_queue.draw_text('\n'.join(self.logo), center_point, center=True)
+
         mode = modes[mode_idx][0]
         if len(mode) < 7:
             mode = mode + " "*(6 - len(mode))
-        mode_display = f"{Color.fg.green} [-]{Color.reset} [ {Color.bold}MODE: {Color.fg.lightblue}{mode}{Color.reset} ] {Color.fg.green}[+] {Color.reset}"
-        self.render_queue.add_string(mode_display, 
-                                  Point(center_point.x - len_no_ansi(mode_display)//2, center_point.y + 5))
+
+        # Draw Mode
+        self.render_queue.draw_text(
+            f"{Color.fg.green} [-]{Color.reset} [ {Color.bold}MODE: {Color.fg.lightblue}{mode}{Color.reset} ] {Color.fg.green}[+] {Color.reset}", 
+            Point(center_point.x, center_point.y + 5), center=True)
         
 
 class Play(Scene):
     def __init__(self):
-        super().__init__(bg_symbol=f'{Color.fg.darkgrey}.{Color.reset}')
+        super().__init__(bg_symbol=f'.', bg_symbol_frmt=Color.fg.darkgrey)
         # Input bindings
-        self.input_manager.add_binding('w', lambda k: self.set_direction("up"))
-        self.input_manager.add_binding('a', lambda k: self.set_direction("left"))
-        self.input_manager.add_binding('s', lambda k: self.set_direction("down"))
-        self.input_manager.add_binding('d', lambda k: self.set_direction("right"))
+        self.input_manager.add_binding('w', lambda: self.set_direction("up"))
+        self.input_manager.add_binding('a', lambda: self.set_direction("left"))
+        self.input_manager.add_binding('s', lambda: self.set_direction("down"))
+        self.input_manager.add_binding('d', lambda: self.set_direction("right"))
         self.frame_counter = 0
     
     def set_direction(self, new_dir):
@@ -89,7 +98,7 @@ class Play(Scene):
     def setup(self):
         self.tickdelay = modes[mode_idx][1]
         self.direction = "right"
-        self.snake = [center_point.dup(), 
+        self.snake = [center_point.copy(), 
                      Point(center_point.x-1, center_point.y),
                      Point(center_point.x-2, center_point.y)]
         self.score = 0
@@ -101,7 +110,7 @@ class Play(Scene):
         self.frame_counter += 1
 
         # Move snake only on even frames for vertical movement
-        head = self.snake[0].dup()
+        head = self.snake[0].copy()
         if self.direction == "up":
             head.y -= 1 
         elif self.direction == "down":
@@ -131,18 +140,19 @@ class Play(Scene):
             self.snake.pop()  # Remove tail if no food eaten
 
         # Render score
-        score_text = f"[ {Color.bold}SCORE: {Color.fg.lightblue}{self.score}{Color.reset} ]"
-        self.render_queue.add_string(score_text, Point(center_point.x - int(len_no_ansi(score_text) / 2), 2))
+        self.render_queue.draw_text(
+            f"[ {Color.bold}SCORE: {Color.fg.lightblue}{self.score}{Color.reset} ]",
+            Point(center_point.x, 2), center=True)
         
         # Render food
-        self.render_queue.add_point(self.food, f"{Color.fg.red}${Color.reset}")
+        self.render_queue.draw_char(self.food, f"{Color.fg.red}${Color.reset}")
         
         # Render snake
         for i, segment in enumerate(self.snake):
             if i == 0:  # Head
-                self.render_queue.add_point(Point(int(segment.x), int(segment.y)), f"{Color.fg.green}@{Color.reset}")
+                self.render_queue.draw_char(Point(int(segment.x), int(segment.y)), f"{Color.fg.green}@{Color.reset}")
             else:  # Body
-                self.render_queue.add_point(Point(int(segment.x), int(segment.y)), f"{Color.fg.green}O{Color.reset}")
+                self.render_queue.draw_char(Point(int(segment.x), int(segment.y)), f"{Color.fg.green}O{Color.reset}")
 
 if __name__ == '__main__':
     game.add_scene("menu", Menu())

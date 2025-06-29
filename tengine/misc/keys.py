@@ -1,3 +1,4 @@
+
 class Key:
     KEY_A: chr = 'a'
     KEY_B: chr = 'b'

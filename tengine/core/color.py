@@ -4,6 +4,18 @@ frmt = type(str())    # Format type
 fgcolor = type(str()) # Foreground color type
 bgcolor = type(str()) # Background color type 
 
+def extract_bg_colors(text):
+    pattern = r'\033\[48;(?:2;\d{1,3};\d{1,3};\d{1,3}|5;\d{1,3})m'
+    
+    # Find all matches in the text
+    bg_codes = re.findall(pattern, text)
+    
+    # Return unique codes while preserving order
+    seen = set()
+    unique_codes = [code for code in bg_codes if not (code in seen or seen.add(code))]
+    
+    return unique_codes
+
 def len_no_ansi(s: str) -> int:
     """Calculate string length excluding ANSI color codes"""
     ansi_pattern = re.compile(r'\033\[[0-9;]*m')
@@ -99,6 +111,9 @@ class Color:
         lightcyan: fgcolor = '\033[96m'
         white: fgcolor = '\033[97m'
 
+        def rgb(r: int, g: int, b: int) -> fgcolor:
+            return f'\033[38;2;{r};{g};{b}m'
+
     class bg:
         black: bgcolor = '\033[40m'
         red: bgcolor = '\033[41m'
@@ -116,10 +131,6 @@ class Color:
         pink: bgcolor = '\033[105m'
         lightcyan: bgcolor = '\033[106m'
         white: bgcolor = '\033[107m'
-
-    def rgb2fg(r: int, g: int, b: int) -> str:
-        return f'\033[38;2;{r};{g};{b}m'
-    def rgb2bg(r: int, g: int, b: int) -> str:
-        return f'\033[48;2;{r};{g};{b}m'
-
-    
+ 
+        def rgb(r: int, g: int, b: int) -> bgcolor:
+            return f'\033[48;2;{r};{g};{b}m'
