@@ -32,15 +32,8 @@ last_score = 0
 class Menu(Scene):
     def __init__(self):
         super().__init__(0.04, bg_symbol_frmt=Color.bg.rgb(69, 163, 239))
-
         self.input_manager.add_binding(Key.KEY_Q, self.save_and_quit)
         self.input_manager.add_binding(Key.KEY_SPACE, lambda: game.set_scene("play"))
-
-        self.bird_pos = Point(25, center_point.y)
-        self.bird_flap = False
-        self.bird_flap_frame = 0
-        self.pipe_x_positions = [center_point.x - 40, center_point.x, center_point.x + 40]
-        self.pipe_randints = [(random.randint(-5, 5),random.randint(5, 20))for _ in range(len(self.pipe_x_positions)) ]
 
 
     def save_and_quit(self):
@@ -62,7 +55,11 @@ class Menu(Scene):
                 sprite_manager.render_sprite(self.render_queue, "pipe_body", body_point, True)
 
     def setup(self):
+        self.bird_pos = Point(25, center_point.y)
         self.bird_flap = False
+        self.bird_flap_frame = 0
+        self.pipe_x_positions = [center_point.x - 40, center_point.x, center_point.x + 40]
+        self.pipe_randints = [(random.randint(-5, 5),random.randint(5, 20))for _ in range(len(self.pipe_x_positions)) ]
     
     def update(self):
 

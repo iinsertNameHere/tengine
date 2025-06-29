@@ -71,6 +71,7 @@ class Game:
         
         prev_scene = self.__active_scene
         scene = self.__scenes[self.__active_scene]
+        scene.setup()
         while True:
             if prev_scene != self.__active_scene:
                 scene = self.__scenes[self.__active_scene]

@@ -1,7 +1,7 @@
 <div align="center">
     <img src="img/tengine-logo.png" style="width: 250px; margin: 0;">
     <h1>tengine - Terminal based Game Engine</h3>
-    <p><a href="#features">Features</a> • <a href="#showcase">Showcase</a> • <a href="#getting-started">Getting Startet</a> • <a href="#core-components">Core Components</a> • <a href="#advanced-features">Advanced Features</a> • <a href="#example-games">Example Games</a> • <a href="#roadmap">Roadmap</a> • <a href="#contributing">Contributing</a></p>
+    <p><a href="#features">Features</a> • <a href="#showcase">Showcase</a> • <a href="#getting-started">Getting Startet</a> • <a href="#module-reference">Module Reference</a> • <a href="#core-concepts">Core Concepts</a> • <a href="#advanced-features">Advanced Features</a> • <a href="#example-games">Example Games</a> • <a href="#roadmap">Roadmap</a> • <a href="#contributing">Contributing</a></p>
 </div>
 
 ---
@@ -42,52 +42,97 @@ This is an example of what tengine is capable of:
 > Still all running in the terminal. Even the flappybird clone. :)
 
 ## Getting Started
-
-### Basic Game Structure
 ```python
-from tengine import Game, Scene, Point
-from tengine.color import Color
+from tengine.core import Game, Scene
+from tengine.core.geometry import Point
+from tengine.core.color import Color
 
-# Create game object
-game = Game(
-    width=40,
-    height=20,
-    border=True
-)
+game = Game(width=20, height=10, border=True)
 
-class MainScene(Scene):
+class Hello(Scene):
     def __init__(self):
-        # Initialize variables and configure your sceen using the super().__init__() function call
-        super().__init__(
-            tickdelay = 0.1, # Update interval in seconds
-            bg_symbol = '.'  # Background character
-        )
-        self.position: Point
+        super().__init__()
 
-    def setup(self):
-        # Scene setup goes here
-        self.position = Point(5, 5)
-        
     def update(self):
-        # Game logic goes here
-        self.render_queue.add_point(self.position, "P")
+        self.render_queue.draw_text(f"{Color.fg.green}Hello, tengine!{Color.reset}", Point(2, 1))
 
-# Initialize and run game
 if __name__ == "__main__":
-    game.add_scene("main", MainScene()) # Add scene MainScene
-    game.set_scene("main") # Set scene to "main"
-    game.run() # Run the game
+    game.add_scene("hello", Hello())
+    game.set_scene("hello")
+    game.run()
 ```
 
-## Core Components
+Run it with `python3 hello.py`. You just rendered your first colored string!
+
+## Module Reference
+
+### Module `tengine.core.game`
+
+| Class / Method | Signature                                                               | Description                                    |                                       |
+| -------------- | ----------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------- |
+| **Game**       | `Game(width:int, height:int, border:bool=True)`                         | Initialise a terminal “canvas”.                |                                       |
+|                | `.add_scene(name:str, scene:Scene)`                                     | Register a scene object.                       |                                       |
+|                | `.set_scene(name:str)`                                                  | Switch active scene (triggers `Scene.setup`).  |                                       |
+|                | `.run()`                                                                | Enter the mainloop (blocks).                   |                                       |
+|                | `.quit(status:int\|None=None)`                                  | Gracefully restore terminal and exit. |
+| **Scene**      | `Scene(tickdelay:float=0.08, bg_symbol:str=' ', bg_symbol_frmt:str='')` | Base class          |                                       |
+|                | `.setup()`                                                              | Called once whenever the scene becomes active. |                                       |
+|                | `.update()`                                                             | Called every tick; implement game logic here.  |                                       |
+|                | `.render_queue`                                                         | Frame buffer for this scene.                   |                                       |
+|                | `.input_manager`                                                        | Keyboard handling for this scene.              |                                       |
+
+### Module `tengine.core.rendering`
+
+| Class / Function  | Brief description                                                                                                                                                                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RenderQueue**   | Off‑screen buffer.  Key methods: <br>`draw_char()`, `draw_text()`, `draw_line()`, `draw_circle()`, `draw_rectangle()`, `draw_triangle()`, `clear()` |
+| **RenderManager** | Handles border, displaying the RenderQueue buffer and cursor reset. Internal to `Game`, rarely used directly.                                                                                                                                                                |
+
+### Module `tengine.core.input`
+
+| Item             | Description                                                                                                                |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **InputManager** | Handles user input. Key functions: `add_binding()`, `block_key()`, `allow_key()` |
+
+### Module `tengine.core.color`
+
+* `Color`: nested `fg` / `bg` classes with 16 standard colours plus `rgb(r,g,b)` helpers.
+* Formatting flags: `Color.bold`, `Color.underline`, `Color.reverse`, `Color.reset`, …
+* `len_no_ansi(text:str) -> int` – correct length of coloured strings.
+* `split_and_group_ansi(text:str) -> list[str]` – internal helper; exposed for advanced use.
+
+### Module `tengine.core.geometry`
+
+| Name                                                        | Purpose                                                              |
+| ----------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Point(x\:int=0, y\:int=0)**                               | Immutable 2‑D point with math (`+`, `-`, comparisons) and `.copy()`. |
+| `line(start,end)`                                           | Bresenham line points.                                               |
+| `circle(center,r, aspect_ratio=0.5)` / `filled_circle(...)` | Points approximating a circle in terminal cells.                     |
+| `rectangle(top_left,w,h)` / `filled_rectangle(...)`         | Points approximating a rectangle in terminal cells.                                                                     | 
+| `triangle(a,b,c)` / `filled_triangle(...)`                  | Points approximating a triangle in terminal cells.                                                                     |
+
+
+## Core Concepts
+
+| Concept              | What it does                                                    | Where to import                        |
+| -------------------- | --------------------------------------------------------------- | -------------------------------------- |
+| **Game**             | Top‑level controller: window size, active scene, main loop      | `tengine.core.Game`                    |
+| **Scene**            | Encapsulates a game state; override `setup()` & `update()`      | `tengine.core.Scene`                   |
+| **RenderQueue**      | Off‑screen buffer you draw into each frame                      | `tengine.core.rendering.RenderQueue`   |
+| **RenderManager**    | Flushes a queue to the terminal each tick                       | `tengine.core.rendering.RenderManager` |
+| **InputManager**     | Non‑blocking keyboard bindings                                  | `tengine.core.input.InputManager`      |
+| **Color**            | ANSI helpers (`Color.fg.red`, `Color.bg.blue`, `Color.bold`, …) | `tengine.core.color.Color`             |
+| **Geometry** | 2‑D math plus ready‑made shapes                                 | `tengine.core.geometry`   |
+
+---
 
 ### Game Class
 The main controller for your game:
 ```python
 game = Game(
-    x_size=60,       # Grid width in characters
-    y_size=30,       # Grid height in characters
-    border=True      # Display border around play area
+    width=60,       # Grid width in characters
+    hight=30,       # Grid height in characters
+    border=True     # Display border around play area
 )
 ```
 
@@ -98,8 +143,9 @@ class CustomScene(Scene):
     def __init__(self):
         """Initial scene Initialization"""
         super().__init__(
-            tickdelay=0.1,       # Tick update interval in seconds
-            bg_symbol=' ',        # Background character
+            tickdelay=0.1,              # Tick update interval in seconds
+            bg_symbol=' ',              # Background character
+            bg_symbol_frmt=Color.bg.red # ANSI Formating for bg_symbol
         )
     
     def setup(self):
@@ -113,13 +159,16 @@ class CustomScene(Scene):
 Add content to the display:
 ```python
 # Add single character at position
-Scene.render_queue.add_point(Point(3, 4), "#")
+Scene.render_queue.draw_char(Point(3, 4), "#")
 
 # Add multi-line string of characters starting from origin point
-Scene.render_queue.add_string("[----------]", Point(10, 5))
+Scene.render_queue.draw_text("[----------]", Point(10, 5))
 
 # Format text using Color class
-Scene.render_queue.add_string(f"{Color.bold}{Color.fg.Red}[ SCORE: 100 ] {Color.reset}", Point(0, 0))
+Scene.render_queue.draw_stext(f"{Color.bold}{Color.fg.Red}[ SCORE: 100 ] {Color.reset}", Point(0, 0))
+
+# Draw a line from point a to point b
+Scene.render_queue.draw_line(Point(0, 0), Point(5, 5), '#')
 ```
 Each Scene instance has its own render queue which can be accessed via: `self.render_queue`. You can also manipulate a scenes render queue from outside the instance like so: `scene.render_queue`.
 
@@ -130,19 +179,22 @@ class GameScene(Scene):
     def __init__(self):
         super().__init__()
         # Bind keys to handler function
-        self.input_manager.add_binding('a', lambda key: self.key_handler(key))
-        self.input_manager.add_binding('b', lambda key: self.key_handler(key))
-        self.input_manager.add_binding('c', lambda key: self.key_handler(key))
+        self.input_manager.add_binding('a', self.key_handler_a)
+        self.input_manager.add_binding('b', self.key_handler_b)
+        self.input_manager.add_binding('c', self.key_handler_c)
         
-        self.last_key: str # Var to hold last key that was pressed
-        
-    def key_handler(self, key):
+    def key_handler_a(self):
         # Handle key press
-        self.last_key = key
+
+    def key_handler_b(self):
+        # Handle key press
+
+    def key_handler_c(self,):
+        # Handle key press
 
     def setup(self):
         # Initialize var when scene is loaded
-        self.last_key = "..."
+        self.last_key = "..." # Var to hold last key that was pressed
 
     def update(self):
         # Display last key that was pressed on screen
@@ -163,6 +215,9 @@ f"{Color.bold}{Color.underline}Important!{Color.reset}"
 
 # Background colors
 f"{Color.bg.blue}Water area{Color.reset}"
+
+# Style text with rgb colors
+f"{Color.fg.rgb(255, 0, 255)}{Color.bg.rgb(0, 255, 0)}RGB Text!{Color.reset}"
 ```
 
 ## Advanced Features
@@ -190,7 +245,8 @@ print(p1 > p2)  # → True
 ### Snake
 The repository includes a complete Snake game:
 ```bash
-mv examples/snake/* .
+cp tengine examples/snake
+cd examples/snake
 python3 snake.py
 ```
 The game gives a simple usage example for tengine.
@@ -206,7 +262,8 @@ Take a look at [snake.py](examples/snake/snake.py) to lern more about how the ga
 ### Flappybord
 The repository also includes a complete Flappybord clone:
 ```bash
-mv examples/flappybird/* .
+cp tengine examples/flappybird
+cd examples/flappybird
 python3 flappybird.py
 ```
 The game gives a advanced usage example for tengine.
@@ -222,10 +279,8 @@ Take a look at [flappybird.py](examples/flappybird/flappybird.py) to lern more a
 
 ## Roadmap
 Planned features:
-- Terminal resize handling
 - More example games (Slots, Flappybird)
 - Improved documentation
-- Abstraction layer for rendering (Lines, Circles, Boxes, img2asci)
 - Entity component system (ECS)
 
 ## Contributing
@@ -234,6 +289,11 @@ Contributions are welcome! Thx 💜
 <a href = "https://github.com/iinsertNameHere/tengine/graphs/contributors">
     <img src = "https://contrib.rocks/image?repo=iinsertNameHere/tengine">
 </a>
+
+## License
+
+
+`tengine` is distributed under the MIT License (see [`LICENSE`](LICENSE)).
 
 <br>
 <br>

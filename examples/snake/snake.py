@@ -79,7 +79,6 @@ class Play(Scene):
         self.input_manager.add_binding('a', lambda: self.set_direction("left"))
         self.input_manager.add_binding('s', lambda: self.set_direction("down"))
         self.input_manager.add_binding('d', lambda: self.set_direction("right"))
-        self.frame_counter = 0
     
     def set_direction(self, new_dir):
         # Prevent 180-degree turns
